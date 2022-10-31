@@ -1,0 +1,51 @@
+From c547b9091ef394fd7ef005e396186d01535be4df Mon Sep 17 00:00:00 2001
+From: Hongxu Jia <hongxu.jia@windriver.com>
+Date: Wed, 14 Jun 2023 12:58:50 +0800
+Subject: [PATCH] fix sigstore verify failed
+
+While sigstore (cosign) enabled, sign a container image in registry R1,
+and then copy it to registry R2, if you pull it from registry R2 with
+sigstore (cosign) verify enabled, the verification will fail
+
+While cosign signing, it saves reference info to sigstore attachment
+manifest as the meta data (payload) of signed container image.
+
+While skopeo or podman applying cosign verify, it needs the reference
+info to fetch signed data.
+
+If a container image is signed in registry R1, it records reference R1
+to sigstore attachment manifest; if the container image is copied to R2,
+reference R1 in sigstore attachment manifest is obsolete.
+
+Due to the sigstore attachment manifest could not be edited and
+it is along with container image in registry, in this situation, if
+reference from sigstore attachment manifest does not work, try to use
+image reference to fetch signed data again
+
+Upstream-Status: Submitted [https://github.com/containers/image/pull/1711]
+
+Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
+---
+ .../containers/image/v5/signature/policy_eval_sigstore.go   | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/src/import/vendor/github.com/containers/image/v5/signature/policy_eval_sigstore.go b/src/import/vendor/github.com/containers/image/v5/signature/policy_eval_sigstore.go
+index dcf5592..23b11e3 100644
+--- a/src/import/vendor/github.com/containers/image/v5/signature/policy_eval_sigstore.go
++++ b/src/import/vendor/github.com/containers/image/v5/signature/policy_eval_sigstore.go
+@@ -193,8 +193,10 @@ func (pr *prSigstoreSigned) isSignatureAccepted(ctx context.Context, image priva
+ 	}
+ 	signature, err := internal.VerifySigstorePayload(publicKey, untrustedPayload, untrustedBase64Signature, internal.SigstorePayloadAcceptanceRules{
+ 		ValidateSignedDockerReference: func(ref string) error {
+-			if !pr.SignedIdentity.matchesDockerReference(image, ref) {
+-				return PolicyRequirementError(fmt.Sprintf("Signature for identity %s is not accepted", ref))
++			// If reference from sigstore attachment manifest failed, try to use image reference
++			var imgref string = image.Reference().DockerReference().Name()
++			if !pr.SignedIdentity.matchesDockerReference(image, ref) && !pr.SignedIdentity.matchesDockerReference(image, imgref) {
++				return PolicyRequirementError(fmt.Sprintf("Signature for identity %s or %s are not accepted", ref, imgref))
+ 			}
+ 			return nil
+ 		},
+-- 
+2.27.0
+

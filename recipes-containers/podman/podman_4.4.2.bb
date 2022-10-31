@@ -20,6 +20,7 @@ DEPENDS = " \
 SRCREV = "74afe26887f814d1c39925a1624851ef3590e79c"
 SRC_URI = " \
     git://github.com/containers/podman.git;branch=v4.4;protocol=https \
+    file://0001-fix-sigstore-verify-failed.patch \
 "
 
 LICENSE = "Apache-2.0"
