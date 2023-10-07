@@ -39,6 +39,7 @@ exclude_graphdriver_btrfs exclude_graphdriver_devicemapper"
 
 # overide LDFLAGS to allow podman to build without: "flag provided but not # defined: -Wl,-O1
 export LDFLAGS=""
+export BUILDFLAGS="${GOBUILDFLAGS}"
 
 inherit go goarch
 inherit systemd pkgconfig
