@@ -115,6 +115,14 @@ INSANE_SKIP:${PN} += "textrel"
 
 SYSTEMD_SERVICE:${PN} = "podman.service podman.socket"
 
-RDEPENDS:${PN} += "conmon virtual-runc iptables cni skopeo fuse-overlayfs"
-RRECOMMENDS:${PN} += "slirp4netns kernel-module-xt-masquerade kernel-module-xt-comment"
+RDEPENDS:${PN} += "conmon virtual-runc iptables cni skopeo fuse-overlayfs util-linux-nsenter"
+RRECOMMENDS:${PN} += "slirp4netns \
+                      kernel-module-xt-masquerade \
+                      kernel-module-xt-comment \
+                      kernel-module-xt-addrtype \
+                      kernel-module-xt-conntrack \
+                      kernel-module-xt-mark \
+                      kernel-module-xt-multiport \
+                      kernel-module-xt-nat \
+                      kernel-module-xt-tcpudp"
 RCONFLICTS:${PN} = "${@bb.utils.contains('PACKAGECONFIG', 'docker', 'docker', '', d)}"
