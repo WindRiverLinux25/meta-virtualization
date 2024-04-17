@@ -5,22 +5,25 @@ applications across multiple hosts, providing basic mechanisms for deployment, \
 maintenance, and scaling of applications. \
 "
 
-PV = "v1.26.8"
-SRCREV_kubernetes = "395f0a2fdc940aeb9ab88849e8fa4321decbf6e1"
-SRCREV_kubernetes-release = "7c1aa83dac555de6f05500911467b70aca4949f0"
+PV = "v1.29.1"
+CVE_VERSION = "1.29.1"
+SRCREV_kubernetes = "a02da633101bd7919153dd56412b09221c0139bf"
+SRCREV_kubernetes-release = "21382abdbfa8e6a43fd417306fa649cb651cc06e"
 PE = "1"
 
 SRCREV_FORMAT ?= "kubernetes_release"
 
-SRC_URI = "git://github.com/kubernetes/kubernetes.git;branch=release-1.26;name=kubernetes;protocol=https;destsuffix=git/src/github.com/kubernetes/kubernetes \
+SRC_URI = "git://github.com/kubernetes/kubernetes.git;branch=release-1.29;name=kubernetes;protocol=https;destsuffix=git/src/github.com/kubernetes/kubernetes \
            git://github.com/kubernetes/release;branch=master;name=kubernetes-release;destsuffix=git/release;protocol=https"
 
 SRC_URI:append = " \
            file://0001-hack-lib-golang.sh-use-CC-from-environment.patch \
            file://0001-cross-don-t-build-tests-by-default.patch \
            file://0001-build-golang.sh-convert-remaining-go-calls-to-use.patch \
+           file://0001-build-hack-allow-go-1.20-building.patch \
            file://cni-containerd-net.conflist \
            file://k8s-init \
+           file://99-kubernetes.conf \
           "
 
 DEPENDS += "rsync-native \
@@ -41,8 +44,6 @@ inherit cni_networking
 
 COMPATIBLE_HOST = '(x86_64.*|arm.*|aarch64.*)-linux'
 
-BIN_PREFIX ?= "${exec_prefix}/local"
-
 do_compile() {
 	export GOPATH="${S}/src/import/.gopath:${S}/src/import/vendor:${STAGING_DIR_TARGET}/${prefix}/local/go:${WORKDIR}/git/"
 	cd ${S}
@@ -60,7 +61,15 @@ do_compile() {
 	export CC="${BUILD_CC}"
 	export LD="${BUILD_LD}"
 
-	#make generated_files GO="go" KUBE_BUILD_PLATFORMS="${HOST_GOOS}/${BUILD_GOARCH}"
+	# set the toolchain to local to avoid an attempted fetch of
+	# valiation by the build
+	# https://github.com/actions/setup-go/issues/420
+	export GOTOOLCHAIN="local"
+
+	# make generated_files GO="go" KUBE_BUILD_PLATFORMS="${HOST_GOOS}/${BUILD_GOARCH}"
+	# is replaced by:
+	# ./hack/update-codegen.sh
+	# but we don't appear to need either anymore, but we leave them as a placeholder/reminder
 
 	# Build the target binaries
 	export GOARCH="${TARGET_GOARCH}"
@@ -73,7 +82,6 @@ do_compile() {
 	export CC="${CC}"
 	export LD="${LD}"
 	export GOBIN=""
-	export GOFLAGS="-trimpath"
 
 	# to limit what is built, use 'WHAT', i.e. make WHAT=cmd/kubelet
 	make cross CGO_FLAGS=${CGO_FLAGS} GO=${GO} KUBE_BUILD_PLATFORMS=${GOOS}/${GOARCH} GOLDFLAGS="" DBG=1
@@ -92,8 +100,11 @@ do_install() {
     install -m 0644 ${WORKDIR}/git/release/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf  ${D}${systemd_unitdir}/system/kubelet.service.d/
 
     if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
-	install -d "${D}${BIN_PREFIX}/bin"
-	install -m 755 "${WORKDIR}/k8s-init" "${D}${BIN_PREFIX}/bin"
+	install -d "${D}${BIN_PREFIX}${base_bindir}"
+	install -m 755 "${WORKDIR}/k8s-init" "${D}${BIN_PREFIX}${base_bindir}"
+
+	install -d ${D}${sysconfdir}/sysctl.d
+	install -m 0644 "${WORKDIR}/99-kubernetes.conf" "${D}${sysconfdir}/sysctl.d"
     fi
 }
 
@@ -104,7 +115,7 @@ PACKAGES =+ "kubeadm kubectl kubelet kube-proxy ${PN}-misc ${PN}-host"
 ALLOW_EMPTY:${PN} = "1"
 INSANE_SKIP:${PN} += "ldflags already-stripped"
 INSANE_SKIP:${PN}-misc += "ldflags already-stripped textrel"
-INSANE_SKIP:${MLPREFIX}kubelet += "textrel"
+INSANE_SKIP:kubelet += "ldflags already-stripped"
 
 # Note: we are explicitly *not* adding docker to the rdepends, since we allow
 #       backends like cri-o to be used.
@@ -128,7 +139,7 @@ FILES:kube-proxy = "${bindir}/kube-proxy"
 FILES:${PN}-misc = "${bindir} ${sysconfdir}/sysctl.d"
 
 ALLOW_EMPTY:${PN}-host = "1"
-FILES:${PN}-host = "${BIN_PREFIX}/bin/k8s-init"
+FILES:${PN}-host = "${BIN_PREFIX}${base_bindir}/k8s-init"
 RDEPENDS:${PN}-host = "${PN}"
 
 RRECOMMENDS:${PN} = "\

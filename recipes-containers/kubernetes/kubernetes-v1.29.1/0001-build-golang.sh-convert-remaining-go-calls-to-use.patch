@@ -1,22 +1,20 @@
-From 3a357f4bb769a4127f5107f4ae21ee8f12279677 Mon Sep 17 00:00:00 2001
-From: Chen Qi <Qi.Chen@windriver.com>
-Date: Thu, 2 Feb 2023 22:29:07 -0800
-Subject: [PATCH 2/2] golang.sh: convert go to $GO
+From 9973a66665992c49593595ae1eb70848907ea6a9 Mon Sep 17 00:00:00 2001
+From: Bruce Ashfield <bruce.ashfield@gmail.com>
+Date: Wed, 12 Aug 2020 16:01:49 +0000
+Subject: [PATCH] build/golang.sh: convert remaining 'go' calls to use
 
-Upstream-Status: Inappropriate [OE Specific]
+Upstream-Status: Inappropriate [embedded specific]
 
-[The patch was original created by Bruce.]
-
-Signed-off-by: Chen Qi <Qi.Chen@windriver.com>
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
 ---
  hack/lib/golang.sh | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/hack/lib/golang.sh b/hack/lib/golang.sh
-index 0ed2d719dd1..c2ea9e10186 100755
---- a/hack/lib/golang.sh
-+++ b/hack/lib/golang.sh
-@@ -676,7 +676,7 @@ kube::golang::build_some_binaries() {
+Index: kubernetes/hack/lib/golang.sh
+===================================================================
+--- kubernetes.orig/hack/lib/golang.sh
++++ kubernetes/hack/lib/golang.sh
+@@ -689,7 +689,7 @@
          kube::golang::create_coverage_dummy_test "${package}"
          kube::util::trap_add "kube::golang::delete_coverage_dummy_test \"${package}\"" EXIT
  
@@ -25,7 +23,7 @@ index 0ed2d719dd1..c2ea9e10186 100755
            -covermode count \
            -coverpkg k8s.io/...,k8s.io/kubernetes/vendor/k8s.io/... \
            "${build_args[@]}" \
-@@ -688,13 +688,13 @@ kube::golang::build_some_binaries() {
+@@ -701,13 +701,13 @@
      done
      if [[ "${#uncovered[@]}" != 0 ]]; then
        V=2 kube::log::info "Building ${uncovered[*]} without coverage..."
@@ -41,7 +39,7 @@ index 0ed2d719dd1..c2ea9e10186 100755
     fi
  }
  
-@@ -756,7 +756,7 @@ kube::golang::build_binaries_for_platform() {
+@@ -769,7 +769,7 @@
      testpkg=$(dirname "${test}")
  
      mkdir -p "$(dirname "${outfile}")"
@@ -50,6 +48,3 @@ index 0ed2d719dd1..c2ea9e10186 100755
        ${goflags:+"${goflags[@]}"} \
        -gcflags="${gogcflags}" \
        -asmflags="${goasmflags}" \
--- 
-2.37.1
-
