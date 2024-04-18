@@ -17,11 +17,12 @@ DEPENDS = " \
     gpgme \
     libseccomp \
     ${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)} \
+    gettext-native \
 "
 
-SRCREV = "74afe26887f814d1c39925a1624851ef3590e79c"
+SRCREV = "946d055df324e4ed6c1e806b561af4740db4fea9"
 SRC_URI = " \
-    git://github.com/containers/podman.git;branch=v4.4;protocol=https \
+    git://github.com/containers/podman.git;branch=v5.0;protocol=https \
     file://0001-fix-sigstore-verify-failed.patch \
 "
 
@@ -37,6 +38,7 @@ PACKAGES =+ "${PN}-contrib"
 PODMAN_PKG = "github.com/containers/libpod"
 BUILDTAGS ?= "seccomp varlink \
 ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd', '', d)} \
+${@bb.utils.contains('PACKAGECONFIG', 'cni', 'cni', 'netavark', d)} \
 exclude_graphdriver_btrfs exclude_graphdriver_devicemapper"
 
 # overide LDFLAGS to allow podman to build without: "flag provided but not # defined: -Wl,-O1
@@ -80,7 +82,11 @@ do_compile() {
 	export CGO_CFLAGS="${CFLAGS} --sysroot=${STAGING_DIR_TARGET}"
 	export CGO_LDFLAGS="${LDFLAGS} --sysroot=${STAGING_DIR_TARGET}"
 
-	oe_runmake BUILDTAGS="${BUILDTAGS}"
+	# podman now builds go-md2man and requires the host/build details
+	export NATIVE_GOOS=${BUILD_GOOS}
+	export NATIVE_GOARCH=${BUILD_GOARCH}
+
+	oe_runmake NATIVE_GOOS=${BUILD_GOOS} NATIVE_GOARCH=${BUILD_GOARCH} BUILDTAGS="${BUILDTAGS}"
 }
 
 do_install() {
@@ -115,7 +121,7 @@ INSANE_SKIP:${PN} += "textrel"
 
 SYSTEMD_SERVICE:${PN} = "podman.service podman.socket"
 
-RDEPENDS:${PN} += "conmon virtual-runc iptables cni skopeo fuse-overlayfs util-linux-nsenter"
+RDEPENDS:${PN} += "conmon virtual-runc iptables ${@bb.utils.contains('PACKAGECONFIG', 'cni', 'cni', 'netavark', d)} skopeo fuse-overlayfs util-linux-nsenter"
 RRECOMMENDS:${PN} += "slirp4netns \
                       kernel-module-xt-masquerade \
                       kernel-module-xt-comment \
