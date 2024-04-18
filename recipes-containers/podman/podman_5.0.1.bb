@@ -12,8 +12,6 @@ REQUIRED_DISTRO_FEATURES ?= "seccomp"
 COMPATIBLE_HOST = "^(?!mips).*"
 
 DEPENDS = " \
-    go-metalinter-native \
-    go-md2man-native \
     gpgme \
     libseccomp \
     ${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)} \

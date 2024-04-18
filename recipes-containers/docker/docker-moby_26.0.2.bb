@@ -61,23 +61,8 @@ SRC_URI = "\
 DOCKER_COMMIT = "${SRCREV_moby}"
 
 DEPENDS = " \
-    go-cli \
-    go-pty \
-    go-context \
-    go-mux \
-    go-patricia \
-    go-logrus \
-    go-fsnotify \
-    go-dbus \
-    go-capability \
-    go-systemd \
     btrfs-tools \
     sqlite3 \
-    go-distribution \
-    compose-file \
-    go-connections \
-    notary \
-    grpc-go \
     libtool-native \
     libtool \
     "
