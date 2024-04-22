@@ -44,14 +44,14 @@ DESCRIPTION = "Linux container runtime \
 # so we get that tag, and make it our SRCREVS:
 #
 
-SRCREV_moby = "1a7969545d73537545645f5cd2c79b7a77e7d39f"
+SRCREV_moby = "7cef0d9cd1cf221d8c0b7b7aeda69552649e0642"
 SRCREV_libnetwork = "67e0588f1ddfaf2faf4c8cae8b7ea2876434d91c"
-SRCREV_cli = "ed223bc820ee9bb7005a333013b86203a9e1bc23"
+SRCREV_cli = "3c863ff8d3f0b81f25ed3afb60f2822019c4b94f"
 SRCREV_FORMAT = "moby_libnetwork"
 SRC_URI = "\
-	git://github.com/moby/moby.git;branch=24.0;name=moby;protocol=https \
+	git://github.com/moby/moby.git;branch=26.0;name=moby;protocol=https \
 	git://github.com/docker/libnetwork.git;branch=master;name=libnetwork;destsuffix=git/libnetwork;protocol=https \
-	git://github.com/docker/cli;branch=24.0;name=cli;destsuffix=git/cli;protocol=https \
+	git://github.com/docker/cli;branch=26.0;name=cli;destsuffix=git/cli;protocol=https \
 	file://docker.init \
 	file://0001-libnetwork-use-GO-instead-of-go.patch \
         file://0001-cli-use-external-GO111MODULE-and-cross-compiler.patch \
@@ -233,7 +233,7 @@ RDEPENDS:${PN} += "${@bb.utils.contains("DOCKER_UNIFIED_PACKAGE", "True", "${PN}
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://src/import/LICENSE;md5=4859e97a9c7780e77972d989f0823f28"
 
-DOCKER_VERSION = "24.0.6"
-PV = "24.0.6"
+DOCKER_VERSION = "26.0.2"
+PV = "26.0.2"
 
 CVE_PRODUCT = "docker mobyproject:moby"
