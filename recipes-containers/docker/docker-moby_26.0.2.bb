@@ -172,7 +172,7 @@ do_install() {
 		rm -f ${D}/${systemd_unitdir}/system/docker.service.rpm
 	else
 		install -d ${D}${sysconfdir}/init.d
-		install -m 0755 ${WORKDIR}/docker.init ${D}${sysconfdir}/init.d/docker.init
+		install -m 0755 ${UNPACKDIR}/docker.init ${D}${sysconfdir}/init.d/docker.init
 	fi
 	# TLS key that docker creates at run-time if not found is what resides here
 	if ${@bb.utils.contains('PACKAGECONFIG','transient-config','true','false',d)}; then
