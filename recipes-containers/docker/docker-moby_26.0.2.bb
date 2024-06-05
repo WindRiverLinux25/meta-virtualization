@@ -49,7 +49,7 @@ SRCREV_libnetwork = "67e0588f1ddfaf2faf4c8cae8b7ea2876434d91c"
 SRCREV_cli = "3c863ff8d3f0b81f25ed3afb60f2822019c4b94f"
 SRCREV_FORMAT = "moby_libnetwork"
 SRC_URI = "\
-	git://github.com/moby/moby.git;branch=26.0;name=moby;protocol=https \
+	git://github.com/moby/moby.git;branch=26.0;name=moby;protocol=https;destsuffix=${GO_SRCURI_DESTSUFFIX} \
 	git://github.com/docker/libnetwork.git;branch=master;name=libnetwork;destsuffix=git/libnetwork;protocol=https \
 	git://github.com/docker/cli;branch=26.0;name=cli;destsuffix=git/cli;protocol=https \
 	file://docker.init \
@@ -122,8 +122,8 @@ do_compile() {
 	ln -sf ../../../.. .gopath/src/"${DOCKER_PKG}"
 	
 	mkdir -p .gopath/src/github.com/docker
-	ln -sf ${WORKDIR}/git/libnetwork .gopath/src/github.com/docker/libnetwork
-	ln -sf ${WORKDIR}/git/cli .gopath/src/github.com/docker/cli
+	ln -sf ${S}/libnetwork .gopath/src/github.com/docker/libnetwork
+	ln -sf ${S}/cli .gopath/src/github.com/docker/cli
 
 	export GOPATH="${S}/src/import/.gopath:${S}/src/import/vendor:${STAGING_DIR_TARGET}/${prefix}/local/go"
 	export GOROOT="${STAGING_DIR_NATIVE}/${nonarch_libdir}/${HOST_SYS}/go"
@@ -160,9 +160,9 @@ do_compile() {
 
 do_install() {
 	mkdir -p ${D}/${bindir}
-	cp ${WORKDIR}/git/cli/build/docker ${D}/${bindir}/docker
+	cp ${S}/cli/build/docker ${D}/${bindir}/docker
 	cp ${S}/src/import/bundles/dynbinary-daemon/dockerd ${D}/${bindir}/dockerd
-	cp ${WORKDIR}/git/libnetwork/bin/docker-proxy* ${D}/${bindir}/docker-proxy
+	cp ${S}/libnetwork/bin/docker-proxy* ${D}/${bindir}/docker-proxy
 
 	if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
 		install -d ${D}${systemd_unitdir}/system

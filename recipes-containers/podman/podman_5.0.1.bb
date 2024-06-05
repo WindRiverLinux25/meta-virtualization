@@ -20,7 +20,7 @@ DEPENDS = " \
 
 SRCREV = "946d055df324e4ed6c1e806b561af4740db4fea9"
 SRC_URI = " \
-    git://github.com/containers/podman.git;branch=v5.0;protocol=https \
+    git://github.com/containers/podman.git;branch=v5.0;protocol=https;;destsuffix=${GO_SRCURI_DESTSUFFIX} \
     file://0001-fix-sigstore-verify-failed.patch \
 "
 
