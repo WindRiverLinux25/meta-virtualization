@@ -11,6 +11,12 @@ SRCREV_kubernetes = "a02da633101bd7919153dd56412b09221c0139bf"
 SRCREV_kubernetes-release = "21382abdbfa8e6a43fd417306fa649cb651cc06e"
 PE = "1"
 
+# NOTE: update the following value when upgrading k8s
+# The value is derived from the following command in k8s repo:
+#   git describe --tags --match='v*' --abbrev=14 "a02da633101bd7919153dd56412b09221c0139bf^{commit}"
+# This following setting is needed in case, otherwise there'll be runtime error in case of shallow tarball.
+export KUBE_GIT_VERSION="v1.29.1-1-ga02da633101bd7"
+
 SRCREV_FORMAT ?= "kubernetes_release"
 
 SRC_URI = "git://github.com/kubernetes/kubernetes.git;branch=release-1.29;name=kubernetes;protocol=https;destsuffix=git/src/github.com/kubernetes/kubernetes \
