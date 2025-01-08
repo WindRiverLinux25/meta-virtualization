@@ -7,9 +7,7 @@ DESCRIPTION = "Podman is a daemonless container engine for developing, \
     "
 
 inherit features_check
-REQUIRED_DISTRO_FEATURES ?= "seccomp"
-
-COMPATIBLE_HOST = "^(?!mips).*"
+REQUIRED_DISTRO_FEATURES ?= "seccomp ipv6"
 
 DEPENDS = " \
     gpgme \
@@ -18,10 +16,10 @@ DEPENDS = " \
     gettext-native \
 "
 
-SRCREV = "946d055df324e4ed6c1e806b561af4740db4fea9"
+SRCREV = "4cbdfde5d862dcdbe450c0f1d76ad75360f67a3c"
 SRC_URI = " \
-    git://github.com/containers/podman.git;branch=v5.0;protocol=https;;destsuffix=${GO_SRCURI_DESTSUFFIX} \
-    file://0001-fix-sigstore-verify-failed.patch \
+    git://github.com/containers/libpod.git;branch=v5.3;protocol=https;destsuffix=${GO_SRCURI_DESTSUFFIX} \
+    ${@bb.utils.contains('PACKAGECONFIG', 'rootless', 'file://50-podman-rootless.conf', '', d)} \
 "
 
 LICENSE = "Apache-2.0"
@@ -31,19 +29,29 @@ GO_IMPORT = "import"
 
 S = "${WORKDIR}/git"
 
+CVE_STATUS[CVE-2022-2989] = "fixed-version: fixed since v4.3.0"
+CVE_STATUS[CVE-2023-0778] = "fixed-version: fixed since v4.5.0"
+
 PACKAGES =+ "${PN}-contrib"
 
 PODMAN_PKG = "github.com/containers/libpod"
+
+BUILDTAGS_EXTRA ?= "${@bb.utils.contains('VIRTUAL-RUNTIME_container_networking','cni','cni','',d)}"
 BUILDTAGS ?= "seccomp varlink \
 ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd', '', d)} \
-${@bb.utils.contains('PACKAGECONFIG', 'cni', 'cni', 'netavark', d)} \
-exclude_graphdriver_btrfs exclude_graphdriver_devicemapper"
+exclude_graphdriver_btrfs exclude_graphdriver_devicemapper ${BUILDTAGS_EXTRA}"
 
 # overide LDFLAGS to allow podman to build without: "flag provided but not # defined: -Wl,-O1
 export LDFLAGS=""
+
+# https://github.com/llvm/llvm-project/issues/53999
+TOOLCHAIN = "gcc"
+
+# podmans Makefile expects BUILDFLAGS to be set but go.bbclass defines them in GOBUILDFLAGS
 export BUILDFLAGS="${GOBUILDFLAGS}"
 
 inherit go goarch
+inherit container-host
 inherit systemd pkgconfig
 
 do_configure[noexec] = "1"
@@ -51,7 +59,7 @@ do_configure[noexec] = "1"
 EXTRA_OEMAKE = " \
      PREFIX=${prefix} BINDIR=${bindir} LIBEXECDIR=${libexecdir} \
      ETCDIR=${sysconfdir} TMPFILESDIR=${nonarch_libdir}/tmpfiles.d \
-     SYSTEMDDIR=${systemd_unitdir}/system USERSYSTEMDDIR=${systemd_unitdir}/user \
+     SYSTEMDDIR=${systemd_unitdir}/system USERSYSTEMDDIR=${systemd_user_unitdir} \
 "
 
 # remove 'docker' from the packageconfig if you don't want podman to
@@ -100,33 +108,48 @@ do_install() {
 	fi
 
 	# Silence docker emulation warnings.
-	mkdir -p ${D}${sysconfdir}/containers
-	touch ${D}${sysconfdir}/containers/nodocker
+	mkdir -p ${D}/etc/containers
+	touch ${D}/etc/containers/nodocker
+
+	if ${@bb.utils.contains('PACKAGECONFIG', 'rootless', 'true', 'false', d)}; then
+		install -d "${D}${sysconfdir}/sysctl.d"
+		install -m 0644 "${UNPACKDIR}/50-podman-rootless.conf" "${D}${sysconfdir}/sysctl.d"
+		install -d "${D}${sysconfdir}/containers"
+		cat <<-EOF >> "${D}${sysconfdir}/containers/containers.conf"
+		[NETWORK]
+		default_rootless_network_cmd="slirp4netns"
+		EOF
+	fi
 }
 
 FILES:${PN} += " \
     ${systemd_unitdir}/system/* \
     ${nonarch_libdir}/systemd/* \
-    ${systemd_unitdir}/user/* \
+    ${systemd_user_unitdir}/* \
     ${nonarch_libdir}/tmpfiles.d/* \
-    ${sysconfdir}/cni \
     ${datadir}/user-tmpfiles.d/* \
+    ${sysconfdir}/cni \
 "
-
-# Fix ELF binary /usr/bin/podman has relocations in .text
-#lib32-podman: ELF binary /usr/bin/podman-remote has relocations in .text [textrel]
-INSANE_SKIP:${PN} += "textrel"
 
 SYSTEMD_SERVICE:${PN} = "podman.service podman.socket"
 
-RDEPENDS:${PN} += "conmon virtual-runc iptables ${@bb.utils.contains('PACKAGECONFIG', 'cni', 'cni', 'netavark', d)} skopeo fuse-overlayfs util-linux-nsenter"
+# The other option for this is "busybox", since meta-virt ensures
+# that busybox is configured with nsenter
+VIRTUAL-RUNTIME_base-utils-nsenter ?= "util-linux-nsenter"
+
+COMPATIBLE_HOST = "^(?!mips).*"
+
+RDEPENDS:${PN} += "\
+	catatonit conmon ${VIRTUAL-RUNTIME_container_runtime} iptables libdevmapper \
+	${VIRTUAL-RUNTIME_container_dns} ${VIRTUAL-RUNTIME_container_networking} ${VIRTUAL-RUNTIME_base-utils-nsenter} \
+	${@bb.utils.contains('PACKAGECONFIG', 'rootless', 'fuse-overlayfs slirp4netns', '', d)} \
+"
 RRECOMMENDS:${PN} += "slirp4netns \
                       kernel-module-xt-masquerade \
                       kernel-module-xt-comment \
+                      kernel-module-xt-mark \
                       kernel-module-xt-addrtype \
                       kernel-module-xt-conntrack \
-                      kernel-module-xt-mark \
-                      kernel-module-xt-multiport \
-                      kernel-module-xt-nat \
-                      kernel-module-xt-tcpudp"
+                      kernel-module-xt-tcpudp \
+                      "
 RCONFLICTS:${PN} = "${@bb.utils.contains('PACKAGECONFIG', 'docker', 'docker', '', d)}"
