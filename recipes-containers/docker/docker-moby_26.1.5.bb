@@ -44,12 +44,12 @@ DESCRIPTION = "Linux container runtime \
 # so we get that tag, and make it our SRCREVS:
 #
 
-SRCREV_moby = "7cef0d9cd1cf221d8c0b7b7aeda69552649e0642"
+SRCREV_moby = "411e817ddf710ff8e08fa193da80cb78af708191"
 SRCREV_libnetwork = "67e0588f1ddfaf2faf4c8cae8b7ea2876434d91c"
-SRCREV_cli = "3c863ff8d3f0b81f25ed3afb60f2822019c4b94f"
+SRCREV_cli = "2ae903e86cab51f694c819721cdfdf5eec693720"
 SRCREV_FORMAT = "moby_libnetwork"
 SRC_URI = "\
-	git://github.com/moby/moby.git;branch=26.0;name=moby;protocol=https;destsuffix=${GO_SRCURI_DESTSUFFIX} \
+	git://github.com/moby/moby.git;branch=26.1;name=moby;protocol=https;destsuffix=${GO_SRCURI_DESTSUFFIX} \
 	git://github.com/docker/libnetwork.git;branch=master;name=libnetwork;destsuffix=git/libnetwork;protocol=https \
 	git://github.com/docker/cli;branch=26.0;name=cli;destsuffix=git/cli;protocol=https \
 	file://docker.init \
@@ -233,7 +233,7 @@ RDEPENDS:${PN} += "${@bb.utils.contains("DOCKER_UNIFIED_PACKAGE", "True", "${PN}
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://src/import/LICENSE;md5=4859e97a9c7780e77972d989f0823f28"
 
-DOCKER_VERSION = "26.0.2"
-PV = "26.0.2"
+DOCKER_VERSION = "26.1.5"
+PV = "26.1.5"
 
 CVE_PRODUCT = "docker mobyproject:moby"
