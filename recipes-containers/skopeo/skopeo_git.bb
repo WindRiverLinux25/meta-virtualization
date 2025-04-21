@@ -22,11 +22,11 @@ RDEPENDS:${PN} = " \
 "
 
 SRC_URI = " \
-    git://github.com/containers/skopeo;branch=main;protocol=https;destsuffix=git/src/github.com/containers/skopeo \
+    git://github.com/containers/skopeo;branch=release-1.18;protocol=https;destsuffix=git/src/github.com/containers/skopeo \
     file://0001-makefile-add-GOBUILDFLAGS-to-go-build-call.patch \
 "
 
-SRCREV = "e8d9f916e04364c128a939535889dc2da74162b5"
+SRCREV = "89cbcbf9c6e756c541fc8235272828fcc23dc0a7"
 PV = "v1.18.0+git"
 GO_IMPORT = "import"
 
