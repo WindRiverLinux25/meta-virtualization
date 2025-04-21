@@ -5,7 +5,7 @@ DESCRIPTION = "containerd is a daemon to control runC, built for performance and
                support as well as checkpoint and restore for cloning and live migration of containers."
 
 
-SRCREV = "06b99ca80cdbfbc6cc8bd567021738c9af2b36ce"
+SRCREV = "fb4c30d4ede3531652d86197bf3fc9515e5276d9"
 SRC_URI = "git://github.com/containerd/containerd;branch=release/2.0;protocol=https;destsuffix=git/src/github.com/containerd/containerd/v2 \
            file://0001-Makefile-allow-GO_BUILD_FLAGS-to-be-externally-speci.patch \
            file://0001-build-don-t-use-gcflags-to-define-trimpath.patch \
@@ -16,8 +16,8 @@ SRC_URI = "git://github.com/containerd/containerd;branch=release/2.0;protocol=ht
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=1269f40c0d099c21a871163984590d89"
 
-CONTAINERD_VERSION = "v2.0.2"
-CVE_VERSION = "v2.0.2"
+CONTAINERD_VERSION = "v2.0.5"
+CVE_VERSION = "2.0.5"
 
 # EXTRA_OEMAKE += "GODEBUG=1"
 
@@ -29,7 +29,7 @@ RPROVIDES:${PN} = "virtual-containerd containerd-opencontainers"
 
 S = "${WORKDIR}/git/src/github.com/containerd/containerd/v2"
 
-PV = "${CONTAINERD_VERSION}+git"
+PV = "${CONTAINERD_VERSION}"
 
 inherit go
 inherit goarch
@@ -61,6 +61,7 @@ do_compile() {
     #        cannot open file : open : no such file or directory
     export GO_BUILD_FLAGS="-trimpath -a -pkgdir dontusecurrentpkgs"
     export GO111MODULE=off
+    export VERSION="${CONTAINERD_VERSION}"
 
     cd ${S}
 
