@@ -7,6 +7,7 @@ SRCREV_distribution = "9ed95e7365224025ee89365e12cf128e1f1bf965"
 SRC_URI = "git://github.com/docker/distribution.git;branch=main;name=distribution;destsuffix=git/src/github.com/distribution/distribution/v3;protocol=https \
            file://docker-registry.service \
            file://0001-build-use-to-use-cross-go-compiler.patch \
+           file://0001-s3-aws-fix-build-for-386.patch \
           "
 
 PACKAGES =+ "docker-registry"
