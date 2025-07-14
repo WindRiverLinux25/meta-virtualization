@@ -20,6 +20,7 @@ SRCREV = "be85287fcf4590961614ee37be65eeb315e5d9ff"
 SRC_URI = " \
     git://github.com/containers/libpod.git;branch=v5.4;protocol=https;destsuffix=${GO_SRCURI_DESTSUFFIX} \
     ${@bb.utils.contains('PACKAGECONFIG', 'rootless', 'file://50-podman-rootless.conf', '', d)} \
+    file://CVE-2025-6032.patch;patchdir=src/import \
 "
 
 LICENSE = "Apache-2.0"
