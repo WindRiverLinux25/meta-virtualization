@@ -5,9 +5,9 @@ applications across multiple hosts, providing basic mechanisms for deployment, \
 maintenance, and scaling of applications. \
 "
 
-PV = "v1.32.6+git"
-CVE_VERSION = "1.32.6"
-SRCREV_kubernetes = "036f7ed3f1f4a2d97a654269a98ad7be7d460db6"
+PV = "v1.32.10+git"
+CVE_VERSION = "1.32.10"
+SRCREV_kubernetes = "d26b18be2afac11e4c4d8ed97997baa012acabf2"
 SRCREV_kubernetes-release = "21382abdbfa8e6a43fd417306fa649cb651cc06e"
 PE = "1"
 
@@ -15,7 +15,7 @@ PE = "1"
 # The value is derived from the following command in k8s repo:
 #   git describe --tags --match='v*' --abbrev=14 "5fe148234f8ab1184f26069c4f7bef6c37efe347^{commit}"
 # This following setting is needed in case, otherwise there'll be runtime error in case of shallow tarball.
-export KUBE_GIT_VERSION="v1.32.0-26-g5fe148234f8ab1"
+export KUBE_GIT_VERSION="v1.32.10"
 
 BBCLASSEXTEND = "devupstream:target"
 LIC_FILES_CHKSUM:class-devupstream = "file://LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57"
