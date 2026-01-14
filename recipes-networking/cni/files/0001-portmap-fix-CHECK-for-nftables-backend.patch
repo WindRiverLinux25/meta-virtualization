@@ -1,0 +1,208 @@
+From 2695be489b713cdeb60371cbd79db94c80215d03 Mon Sep 17 00:00:00 2001
+From: Etienne Champetier <e.champetier@ateme.com>
+Date: Wed, 5 Nov 2025 11:13:39 -0500
+Subject: [PATCH 1/2] portmap: fix CHECK for nftables backend
+
+Fixes 01a94e17c77e6ff8e5019e15c42d8d92cf87194f
+
+Signed-off-by: Etienne Champetier <e.champetier@ateme.com>
+
+CVE: CVE-2025-67499
+
+Upstream-Status: Backport [https://github.com/containernetworking/plugins/commit/8ee59c6f]
+
+Signed-off-by: Chen Qi <Qi.Chen@windriver.com>
+---
+ plugins/meta/portmap/portmap_nftables.go      |  16 ++-
+ plugins/meta/portmap/portmap_nftables_test.go | 116 +++++++++++++-----
+ 2 files changed, 100 insertions(+), 32 deletions(-)
+
+diff --git a/plugins/meta/portmap/portmap_nftables.go b/plugins/meta/portmap/portmap_nftables.go
+index 75ad7206..d3e7049d 100644
+--- a/plugins/meta/portmap/portmap_nftables.go
++++ b/plugins/meta/portmap/portmap_nftables.go
+@@ -246,14 +246,24 @@ func (pmNFT *portMapperNFTables) checkPorts(config *PortMapConf, containerNet ne
+ 	var hostPorts, hostIPHostPorts, masqueradings int
+ 	for _, e := range config.RuntimeConfig.PortMaps {
+ 		if e.HostIP != "" {
+-			hostIPHostPorts++
++			hostIP := net.ParseIP(e.HostIP)
++			isHostV6 := (hostIP.To4() == nil)
++			// Ignore wrong-IP-family HostIPs
++			if isV6 != isHostV6 {
++				continue
++			}
++			if hostIP.IsUnspecified() {
++				hostPorts++
++			} else {
++				hostIPHostPorts++
++			}
+ 		} else {
+ 			hostPorts++
+ 		}
+ 	}
+ 	if *config.SNAT {
+-		masqueradings = len(config.RuntimeConfig.PortMaps)
+-		if isV6 {
++		masqueradings = 1
++		if !isV6 {
+ 			masqueradings *= 2
+ 		}
+ 	}
+diff --git a/plugins/meta/portmap/portmap_nftables_test.go b/plugins/meta/portmap/portmap_nftables_test.go
+index 0b11f20e..c367f7ad 100644
+--- a/plugins/meta/portmap/portmap_nftables_test.go
++++ b/plugins/meta/portmap/portmap_nftables_test.go
+@@ -27,6 +27,31 @@ import (
+ 
+ var _ = Describe("portmapping configuration (nftables)", func() {
+ 	containerID := "icee6giejonei6so"
++	configTmpl := `{
++		"name": "test",
++		"type": "portmap",
++		"cniVersion": "%s",
++		"backend": "nftables",
++		"runtimeConfig": {
++			"portMappings": [
++				{ "hostPort": 8080, "containerPort": 80, "protocol": "tcp"},
++				{ "hostPort": 8081, "containerPort": 80, "protocol": "tcp"},
++				{ "hostPort": 8080, "containerPort": 81, "protocol": "udp"},
++				{ "hostPort": 8082, "containerPort": 82, "protocol": "udp"},
++				{ "hostPort": 8083, "containerPort": 83, "protocol": "tcp", "hostIP": "192.168.0.2"},
++				{ "hostPort": 8084, "containerPort": 84, "protocol": "tcp", "hostIP": "0.0.0.0"},
++				{ "hostPort": 8085, "containerPort": 85, "protocol": "tcp", "hostIP": "2001:db8:a::1"},
++				{ "hostPort": 8086, "containerPort": 86, "protocol": "tcp", "hostIP": "::"}
++			]
++		},
++		"snat": true,
++		"conditionsV4": ["a", "b"],
++		"conditionsV6": ["c", "d"]
++	}`
++	containerNet4, err := types.ParseCIDR("10.0.0.2/24")
++	Expect(err).NotTo(HaveOccurred())
++	containerNet6, err := types.ParseCIDR("2001:db8::2/64")
++	Expect(err).NotTo(HaveOccurred())
+ 
+ 	for _, ver := range []string{"0.3.0", "0.3.1", "0.4.0", "1.0.0"} {
+ 		// Redefine ver inside for scope so real value is picked up by each dynamically defined It()
+@@ -45,37 +70,14 @@ var _ = Describe("portmapping configuration (nftables)", func() {
+ 				}
+ 			})
+ 
+-			It(fmt.Sprintf("[%s] generates correct rules on ADD", ver), func() {
+-				configBytes := []byte(fmt.Sprintf(`{
+-					"name": "test",
+-					"type": "portmap",
+-					"cniVersion": "%s",
+-					"backend": "nftables",
+-					"runtimeConfig": {
+-						"portMappings": [
+-							{ "hostPort": 8080, "containerPort": 80, "protocol": "tcp"},
+-							{ "hostPort": 8081, "containerPort": 80, "protocol": "tcp"},
+-							{ "hostPort": 8080, "containerPort": 81, "protocol": "udp"},
+-							{ "hostPort": 8082, "containerPort": 82, "protocol": "udp"},
+-							{ "hostPort": 8083, "containerPort": 83, "protocol": "tcp", "hostIP": "192.168.0.2"},
+-							{ "hostPort": 8084, "containerPort": 84, "protocol": "tcp", "hostIP": "0.0.0.0"},
+-							{ "hostPort": 8085, "containerPort": 85, "protocol": "tcp", "hostIP": "2001:db8:a::1"},
+-							{ "hostPort": 8086, "containerPort": 86, "protocol": "tcp", "hostIP": "::"}
+-						]
+-					},
+-					"snat": true,
+-					"conditionsV4": ["a", "b"],
+-					"conditionsV6": ["c", "d"]
+-				}`, ver))
++			It(fmt.Sprintf("[%s] generates correct rules", ver), func() {
++				configBytes := []byte(fmt.Sprintf(configTmpl, ver))
+ 
+ 				conf, _, err := parseConfig(configBytes, "foo")
+ 				Expect(err).NotTo(HaveOccurred())
+ 				conf.ContainerID = containerID
+ 
+-				containerNet, err := types.ParseCIDR("10.0.0.2/24")
+-				Expect(err).NotTo(HaveOccurred())
+-
+-				err = pmNFT.forwardPorts(conf, *containerNet)
++				err = pmNFT.forwardPorts(conf, *containerNet4)
+ 				Expect(err).NotTo(HaveOccurred())
+ 
+ 				expectedRules := strings.TrimSpace(`
+@@ -103,10 +105,8 @@ add rule ip cni_hostport prerouting a b jump hostports
+ 
+ 				// Disable snat, generate IPv6 rules
+ 				*conf.SNAT = false
+-				containerNet, err = types.ParseCIDR("2001:db8::2/64")
+-				Expect(err).NotTo(HaveOccurred())
+ 
+-				err = pmNFT.forwardPorts(conf, *containerNet)
++				err = pmNFT.forwardPorts(conf, *containerNet6)
+ 				Expect(err).NotTo(HaveOccurred())
+ 
+ 				expectedRules = strings.TrimSpace(`
+@@ -129,6 +129,64 @@ add rule ip6 cni_hostport prerouting c d jump hostports
+ 				actualRules = strings.TrimSpace(ipv6Fake.Dump())
+ 				Expect(actualRules).To(Equal(expectedRules))
+ 			})
++
++			It(fmt.Sprintf("[%s] has working CHECK", ver), func() {
++				configBytes := []byte(fmt.Sprintf(configTmpl, ver))
++
++				conf, _, err := parseConfig(configBytes, "foo")
++				Expect(err).NotTo(HaveOccurred())
++				conf.ContainerID = containerID
++
++				// CHECK KO: Missing all rules
++				err = pmNFT.checkPorts(conf, *containerNet4)
++				Expect(err).To(HaveOccurred())
++				err = pmNFT.checkPorts(conf, *containerNet6)
++				Expect(err).To(HaveOccurred())
++
++				*conf.SNAT = false
++
++				// ADD with SNAT=false
++				err = pmNFT.forwardPorts(conf, *containerNet4)
++				Expect(err).NotTo(HaveOccurred())
++				err = pmNFT.forwardPorts(conf, *containerNet6)
++				Expect(err).NotTo(HaveOccurred())
++
++				// CHECK OK: no SNAT rules
++				err = pmNFT.checkPorts(conf, *containerNet4)
++				Expect(err).NotTo(HaveOccurred())
++				err = pmNFT.checkPorts(conf, *containerNet6)
++				Expect(err).NotTo(HaveOccurred())
++
++				*conf.SNAT = true
++
++				// CHECK KO: missing SNAT rules
++				err = pmNFT.checkPorts(conf, *containerNet4)
++				Expect(err).To(HaveOccurred())
++				err = pmNFT.checkPorts(conf, *containerNet6)
++				Expect(err).To(HaveOccurred())
++
++				// ADD with SNAT=true
++				err = pmNFT.forwardPorts(conf, *containerNet4)
++				Expect(err).NotTo(HaveOccurred())
++				err = pmNFT.forwardPorts(conf, *containerNet6)
++				Expect(err).NotTo(HaveOccurred())
++
++				// CHECK OK: All rules present
++				err = pmNFT.checkPorts(conf, *containerNet4)
++				Expect(err).NotTo(HaveOccurred())
++				err = pmNFT.checkPorts(conf, *containerNet6)
++				Expect(err).NotTo(HaveOccurred())
++
++				// DELETE
++				err = pmNFT.unforwardPorts(conf)
++				Expect(err).NotTo(HaveOccurred())
++
++				// CHECK KO: Missing all rules
++				err = pmNFT.checkPorts(conf, *containerNet4)
++				Expect(err).To(HaveOccurred())
++				err = pmNFT.checkPorts(conf, *containerNet6)
++				Expect(err).To(HaveOccurred())
++			})
+ 		})
+ 	}
+ })
+-- 
+2.34.1
+

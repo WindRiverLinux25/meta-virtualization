@@ -18,7 +18,10 @@ SRC_URI = "\
 	file://modules.txt \
 	"
 
-SRC_URI += "git://github.com/containernetworking/plugins.git;branch=main;destsuffix=${GO_SRCURI_DESTSUFFIX}/src/github.com/containernetworking/plugins;name=plugins;protocol=https"
+SRC_URI += "git://github.com/containernetworking/plugins.git;branch=main;destsuffix=${GO_SRCURI_DESTSUFFIX}/src/github.com/containernetworking/plugins;name=plugins;protocol=https \
+            file://0001-portmap-fix-CHECK-for-nftables-backend.patch;patchdir=src/import/src/github.com/containernetworking/plugins \
+            file://0002-portmap-ensure-nftables-backend-only-intercept-local.patch;patchdir=src/import/src/github.com/containernetworking/plugins \
+            "
 SRC_URI += "git://github.com/flannel-io/cni-plugin;branch=main;name=flannel_plugin;protocol=https;destsuffix=${GO_SRCURI_DESTSUFFIX}/src/github.com/containernetworking/plugins/plugins/meta/flannel"
 
 # generated via:
