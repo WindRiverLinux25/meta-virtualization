@@ -47,6 +47,7 @@ SRC_URI = "git://github.com/lxc/lxc.git;branch=stable-6.0;protocol=https \
 	file://0001-template-if-busybox-contains-init-use-it-in-containe.patch \
 	file://dnsmasq.conf \
 	file://lxc-net \
+        file://CVE-2026-39402.patch \
 	"
 
 SRCREV = "fe31d844e882d5cc176a7935a93b14b4b2823992"
